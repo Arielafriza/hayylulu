@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>The Infinite Love | For You ❤️</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;600;800&family=Dancing+Script:wght@700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        /* 1. RESET & VARIABLES */
+        :root {
+            --primary: #ff758c;
+            --secondary: #ff7eb3;
+            --accent: #a29bfe;
+            --bg-dark: #020617;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --text-main: #f8fafc;
+            --transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 2. DYNAMIC BACKGROUND ENGINE */
+        #bg-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .bg-gradient {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #020617 100%);
+            z-index: -2;
+        }
+
+        .aurora {
+            position: absolute;
+            width: 200%; height: 200%;
+            top: -50%; left: -50%;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 117, 140, 0.08), rgba(162, 155, 254, 0.08), transparent);
+            filter: blur(100px);
+            animation: aurora-move 30s linear infinite;
+        }
+
+        @keyframes aurora-move {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-50px, 50px) rotate(180deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
+        }
+
+        /* 3. PRELOADER & SEQUENCING */
+        #preloader {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1s ease-out, visibility 1s;
+        }
+
+        .heart-loader {
+            position: relative;
+            width: 100px; height: 100px;
+            animation: heart-beat 1.5s ease infinite;
+        }
+
+        .heart-loader svg {
+            fill: var(--primary);
+            filter: drop-shadow(0 0 15px var(--primary));
+        }
+
+        @keyframes heart-beat {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.2); filter: brightness(1.3); }
+        }
+
+        #loading-msg {
+            margin-top: 30px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            color: var(--primary);
+            letter-spacing: 2px;
+            text-align: center;
+            min-height: 20px;
+        }
+
+        .ready-btn {
+            margin-top: 40px;
+            padding: 18px 45px;
+            border-radius: 50px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            font-weight: 800;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            box-shadow: 0 10px 25px rgba(255, 117, 140, 0.4);
+        }
+
+        .ready-btn.show { opacity: 1; transform: translateY(0); }
+
+        /* 4. APP STRUCTURE */
+        .main-container {
+            width: 100%; height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .content-area {
+            flex: 1; width: 100%;
+            max-width: 480px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .screen {
+            position: absolute;
+            width: calc(100% - 40px);
+            max-width: 440px;
+            display: none;
+            opacity: 0;
+            transform: scale(0.9) translateY(30px);
+            transition: var(--transition);
+        }
+
+        .screen.active {
+            display: block; opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            padding: 45px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+
+        /* 5. CALENDAR STYLING */
+        .calendar-box {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 25px; padding: 20px;
+            margin: 15px 0; border: 1px solid var(--glass-border);
+        }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+        .cal-day { font-size: 0.85rem; color: rgba(255,255,255,0.7); aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
+        .cal-special { position: relative; color: var(--primary); font-weight: 800; border: 2px solid var(--primary); border-radius: 50%; box-shadow: 0 0 15px rgba(255, 117, 140, 0.4); }
+        .cal-special::after { content: '✓'; position: absolute; bottom: -18px; font-size: 1.2rem; color: var(--primary); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } }
+
+        /* 6. ORIGINAL TEXT STYLING */
+        .milad-title { font-family: 'Dancing Script', cursive; font-size: 2.8rem; line-height: 1.1; margin-bottom: 25px; background: linear-gradient(to right, #fff, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700; }
+        .milad-text { font-size: 0.95rem; line-height: 1.8; color: rgba(255, 255, 255, 0.8); margin-bottom: 30px; font-weight: 300; }
+
+        /* 7. GALLERY GRID */
+        .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-height: 400px; overflow-y: auto; padding: 10px; scrollbar-width: none; }
+        .gallery-grid::-webkit-scrollbar { display: none; }
+        .img-wrap { position: relative; border-radius: 25px; overflow: hidden; aspect-ratio: 1/1; border: 1px solid var(--glass-border); transition: all 0.4s ease; }
+        .img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s ease; }
+
+        /* 8. TIMELINE LOGS */
+        .logs-container { text-align: left; }
+        .log-entry { margin-bottom: 20px; padding: 20px; background: rgba(0, 0, 0, 0.2); border-radius: 20px; border-left: 3px solid var(--primary); transition: 0.3s; }
+        .log-tag { font-family: 'Fira Code', monospace; font-size: 0.7rem; color: var(--primary); font-weight: 700; display: block; margin-bottom: 5px; }
+
+        /* 9. NAVIGATION (DOCK) */
+        nav { position: fixed; bottom: 30px; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 8px; border-radius: 35px; display: flex; gap: 4px; border: 1px solid var(--glass-border); box-shadow: 0 20px 40px rgba(0,0,0,0.5); width: 95%; max-width: 450px; justify-content: space-around; }
+        .nav-btn { background: none; border: none; color: #64748b; padding: 10px 5px; font-size: 0.65rem; font-weight: 800; cursor: pointer; border-radius: 25px; transition: all 0.4s ease; text-transform: uppercase; flex: 1; }
+        .nav-btn.active { background: var(--primary); color: white; }
+
+        .action-btn { width: 100%; padding: 18px; border-radius: 50px; border: 1px solid var(--primary); background: transparent; color: var(--primary); font-weight: 800; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 2px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" loop>
+        <source src="hanyarindu.mp3" type="audio/mpeg">
+    </audio>
+
+    <canvas id="bg-canvas"></canvas>
+    <div class="bg-gradient"><div class="aurora"></div></div>
+
+    <div id="preloader">
+        <div class="heart-loader">
+            <svg viewBox="0 0 32 32"><path d="M16,28.261c-0.125,0-0.25-0.032-0.361-0.096C15.244,27.935,4,21.367,4,11c0-4.411,3.589-8,8-8c2.408,0,4.629,1.063,6.137,2.834C19.643,4.063,21.864,3,24.272,3c4.411,0,8,3.589,8,8c0,10.367-11.244,16.935-11.639,17.165C20.522,28.229,20.397,28.261,20.272,28.261z"/></svg>
+        </div>
+        <div id="loading-msg">INITIALIZING_LOVE_SYSTEM...</div>
+        <button id="start-btn" class="ready-btn" onclick="startExperience()">OPEN YOUR GIFT ✨</button>
+    </div>
+
+    <div class="main-container" id="main-app">
+        <div class="content-area">
+            
+            <div id="home" class="screen active">
+                <div class="glass-card">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">✨</div>
+                    <h1 class="milad-title">Yaumul Milad Barakallah Fii Umrik Bokeemm</h1>
+                    <p class="milad-text">Di hari bertambahnya usia lulu ini, ai cuma mau mendoakan hal-hal baik selalu berpihak pada lulu. Semoga allah senantiasa melindungi lulu, melancarkan segala usursan lulu dan mengabulkan mimpi-mimpi yang dulu sering lulu ceritain ke ai.</p>
+                    <div style="margin: 20px 0; padding: 15px; border-radius: 15px; background: rgba(255,255,255,0.05); font-style: italic; font-size: 0.85rem; border: 1px dashed var(--primary);">"Selamat Ulang Tahun Yaaaa."</div>
+                    <button class="action-btn" onclick="celebrate()">Celebrate Now! 🎊</button>
+                </div>
+            </div>
+
+            <div id="special" class="screen">
+                <div class="glass-card">
+                    <h2 style="font-family: 'Dancing Script'; font-size: 2.2rem; color: var(--primary); margin-bottom: 10px;">Februari</h2>
+                    <div class="calendar-box">
+                        <div class="calendar-grid">
+                            <div class="cal-day">1</div><div class="cal-day">2</div><div class="cal-day">3</div><div class="cal-day">4</div><div class="cal-day">5</div><div class="cal-day">6</div><div class="cal-day">7</div>
+                            <div class="cal-day">8</div><div class="cal-day">9</div><div class="cal-day">10</div><div class="cal-day">11</div><div class="cal-day">12</div><div class="cal-day">13</div><div class="cal-day">14</div>
+                            <div class="cal-day">15</div><div class="cal-day">16</div><div class="cal-day">17</div><div class="cal-day">18</div><div class="cal-day">19</div><div class="cal-day">20</div><div class="cal-day">21</div>
+                            <div class="cal-day">22</div><div class="cal-day">23</div><div class="cal-day">24</div><div class="cal-day">25</div><div class="cal-day">26</div><div class="cal-day">27</div>
+                            <div class="cal-day cal-special">28</div>
+                        </div>
+                    </div>
+                    <div style="font-family: 'Dancing Script'; font-size: 1.8rem; margin-top: 25px; color: var(--text-main);">it's Your Special Day</div>
+                </div>
+            </div>
+
+            <div id="gallery" class="screen">
+                <div class="glass-card">
+                    <h2 style="font-family: 'Dancing Script'; font-size: 2.2rem; margin-bottom: 20px;">Your Memories</h2>
+                    <div class="gallery-grid">
+                        <div class="img-wrap"><img src="1.jpg" alt="Memory"></div>
+                        <div class="img-wrap"><img src="2.jpg" alt="Memory"></div>
+                        <div class="img-wrap"><img src="3.jpg" alt="Memory"></div>
+                        <div class="img-wrap"><img src="4.jpg" alt="Memory"></div>
+                        <div class="img-wrap"><img src="5.jpg" alt="Memory"></div>
+                        <div class="img-wrap"><img src="6.jpg" alt="Memory"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="logs" class="screen">
+                <div class="glass-card">
+                    <h2 style="margin-bottom: 30px; letter-spacing: 2px; font-weight: 800;">Maybe You Remember</h2>
+                    <div class="logs-container">
+                        <div class="log-entry"><span class="log-tag">[22/10/2025 23.43] luluu</span><p style="font-size: 0.8rem; opacity: 0.8;">lulu gamau lepasin ai, emg ai ga sayang?🥺</p></div>
+                        <div class="log-entry"><span class="log-tag">[18/10/2025 22.25] luluu</span><p style="font-size: 0.8rem; opacity: 0.8;">iya sayang, jgn bobo mlm yaa</p></div>
+                        <div class="log-entry"><span class="log-tag">[17/11/2025 06.52] luluu</span><p style="font-size: 0.8rem; opacity: 0.8;">6.2.26 bagus dehh</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="letter" class="screen">
+                <div class="glass-card">
+                    <h2 style="font-family: 'Dancing Script'; font-size: 2.5rem; margin-bottom: 25px;">Soul Message</h2>
+                    <div style="background: rgba(0,0,0,0.3); padding: 25px; border-radius: 30px; text-align: left; line-height: 2;">
+                        <p style="font-size: 0.9rem; font-weight: 300;">jujur butu keberanian untuk ai ngetik dan buat web ini, karena harus ai akui lulu masi punya ruang tersendiri di pikiran ai. <br><br>apapun masalah yang sedang lulu hadapai saat ini, ai berharap lulu harus tetap kuat yaa, jangan perna menyerah atas semua permasalahan yang terus terusan dateng di hidup lulu, ai yakin lulu pasti bisa ngelewatin itu semua, semangat yaa, lulu hebat. lulu kuatt. jangan buka puasa diem diem yaa😅 <br><br><span style="color: var(--primary); font-weight: 800; border-bottom: 2px solid var(--primary);">I Love You, Today and Always.</span></p>
+                    </div>
+                    <p style="margin-top: 25px; font-family: 'Dancing Script'; font-size: 1.5rem; color: var(--accent);">- elcalonustadz</p>
+                </div>
+            </div>
+
+            <div id="games" class="screen">
+                <div class="glass-card">
+                    <h2 style="font-family: 'Dancing Script'; font-size: 2.2rem; color: var(--primary); margin-bottom: 20px;">Tebak-tebakan ✨</h2>
+                    <div id="game-container" style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 20px; min-height: 200px; display: flex; flex-direction: column; justify-content: center;">
+                        <p id="pertanyaan" style="font-size: 1.1rem; margin-bottom: 20px; line-height: 1.5; font-weight: 600;">Klik tombol di bawah buat mulai!</p>
+                        <p id="jawaban" style="font-size: 1rem; color: var(--primary); font-style: italic; display: none; margin-bottom: 20px; padding: 10px; border-top: 1px dashed rgba(255,255,255,0.2);"></p>
+                        <button class="action-btn" id="btn-game" onclick="nextQuestion()" style="margin-top: auto;">Mulai Main</button>
+                    </div>
+                    <p style="font-size: 0.7rem; opacity: 0.5; margin-top: 20px; font-family: 'Fira Code';"></p>
+                </div>
+            </div>
+
+        </div>
+
+        <nav id="nav-dock">
+            <button class="nav-btn active" onclick="showScreen('home', this)">Home</button>
+            <button class="nav-btn" onclick="showScreen('special', this)">Date</button>
+            <button class="nav-btn" onclick="showScreen('gallery', this)">Vault</button>
+            <button class="nav-btn" onclick="showScreen('logs', this)">Logs</button>
+            <button class="nav-btn" onclick="showScreen('letter', this)">Soul</button>
+            <button class="nav-btn" onclick="showScreen('games', this)">Games</button>
+        </nav>
+    </div>
+
+    <script>
+        const loadMsgs = ["CONNECTING_TO_DATABASE...", "FETCHING_MEMORIES...", "CALIBRATING_EMOTIONS...", "CLEANING_BUGS...", "FINALIZING_GIFT...", "SYSTEM_READY."];
+        let msgIdx = 0;
+        const msgEl = document.getElementById('loading-msg');
+        const cycleMsgs = setInterval(() => {
+            msgEl.style.opacity = '0';
+            setTimeout(() => {
+                msgEl.innerText = loadMsgs[msgIdx];
+                msgEl.style.opacity = '1';
+                msgIdx++;
+                if(msgIdx >= loadMsgs.length) {
+                    clearInterval(cycleMsgs);
+                    document.getElementById('start-btn').classList.add('show');
+                }
+            }, 300);
+        }, 1000);
+
+        function startExperience() {
+            const music = document.getElementById('bg-music');
+            music.play().catch(e => console.log("Audio needs interaction"));
+            document.getElementById('preloader').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('preloader').style.display = 'none';
+                document.getElementById('main-app').style.display = 'flex';
+                celebrate();
+                initParticles();
+            }, 1000);
+        }
+
+        function showScreen(screenId, btn) {
+            document.querySelectorAll('.screen').forEach(s => {
+                s.style.opacity = '0';
+                s.style.transform = 'scale(0.9) translateY(30px)';
+                setTimeout(() => { s.classList.remove('active'); }, 500);
+            });
+            setTimeout(() => {
+                const active = document.getElementById(screenId);
+                active.classList.add('active');
+                setTimeout(() => {
+                    active.style.opacity = '1';
+                    active.style.transform = 'scale(1) translateY(0)';
+                }, 50);
+            }, 550);
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        // BACKGROUND PARTICLES
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        function initParticles() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            for(let i = 0; i < 30; i++) {
+                particles.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: Math.random() * 3 + 1, speed: Math.random() * 1 + 0.5, opacity: Math.random() });
+            }
+            animateParticles();
+        }
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.y -= p.speed; if(p.y < -10) p.y = canvas.height + 10;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 117, 140, ${p.opacity})`; ctx.fill();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+
+        function celebrate() {
+            const defaults = { spread: 360, ticks: 100, gravity: 0.5, decay: 0.94, startVelocity: 30, colors: ['#ff758c', '#a29bfe', '#ffffff'] };
+            confetti({ ...defaults, particleCount: 80, scalar: 1.2 });
+            confetti({ ...defaults, particleCount: 40, scalar: 0.75 });
+        }
+
+        // LOGIKA GAME TEBAK-TEBAKAN
+        const daftarTebakan = [
+            { p: "Kupu-kupu apa yang paling cantik?", j: "Kupu-pilih kamu jadi masa depanku. ❤️" },
+            { p: "Apa bedanya kamu sama modem?", j: "Modem terhubung ke internet, kamu terhubung ke hatiku. 📶" },
+            { p: "Kucing, kucing apa yang paling romantis?", j: "Kucing-ta kamu selamanya. 🐱" },
+            { p: "Bis, bis apa yang bikin mabuk?", j: "Bis-ikan sayang dari kamu. 🚌" },
+            { p: "Susu apa yang bikin bahagia?", j: "Susu-dah memilikimu di hidupku. 🥛" }
+        ];
+        let gameIdx = -1;
+        function nextQuestion() {
+            const pEl = document.getElementById('pertanyaan');
+            const jEl = document.getElementById('jawaban');
+            const btn = document.getElementById('btn-game');
+            if (jEl.style.display === 'none' && gameIdx !== -1) {
+                jEl.style.display = 'block'; btn.innerText = "Lanjut Lagi";
+            } else {
+                gameIdx = (gameIdx + 1) % daftarTebakan.length;
+                pEl.innerText = daftarTebakan[gameIdx].p; jEl.innerText = daftarTebakan[gameIdx].j;
+                jEl.style.display = 'none'; btn.innerText = "Lihat Jawaban";
+            }
+        }
+
+        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+    </script>
+</body>
+</html>
